@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import SurveyCard from "@/components/SurveyCard";
 import AnswerSurveyDialog from "@/components/AnswerSurveyDialog";
 import { Shield, Zap, Lock } from "lucide-react";
-import { SURVEYCHAIN_ADDRESS } from "@/config/contracts";
 
 interface Survey {
   id: string;
@@ -15,28 +14,51 @@ interface Survey {
   address: string;
 }
 
-const Index = () => {
-  // Display the deployed survey contract
-  const [surveys] = useState<Survey[]>([
-    {
-      id: "1",
-      title: "Community Sentiment Survey",
-      description: "Share your feedback about our community. Your vote is fully encrypted using FHE technology.",
-      options: [
-        "Very Satisfied",
-        "Satisfied",
-        "Neutral",
-        "Dissatisfied",
-        "Very Dissatisfied"
-      ],
-      responses: 0,
-      createdAt: new Date(),
-      address: SURVEYCHAIN_ADDRESS,
-    },
-  ]);
+interface DeployedSurvey {
+  id: string;
+  title: string;
+  description: string;
+  address: string;
+  options: string[];
+  startTime: number;
+  endTime: number;
+  finalized: boolean;
+  optionsCount: number;
+}
 
+const Index = () => {
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
   const [answerDialogOpen, setAnswerDialogOpen] = useState(false);
+
+  // Load surveys from deployed-surveys.json
+  useEffect(() => {
+    const loadSurveys = async () => {
+      try {
+        const response = await fetch('/deployed-surveys.json');
+        const deployedSurveys: DeployedSurvey[] = await response.json();
+
+        const formattedSurveys: Survey[] = deployedSurveys.map(s => ({
+          id: s.id,
+          title: s.title,
+          description: s.description,
+          options: s.options,
+          responses: 0, // TODO: fetch from blockchain
+          createdAt: new Date(s.startTime * 1000),
+          address: s.address,
+        }));
+
+        setSurveys(formattedSurveys);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to load surveys:', error);
+        setLoading(false);
+      }
+    };
+
+    loadSurveys();
+  }, []);
 
   const handleAnswerSurvey = (survey: Survey) => {
     setSelectedSurvey(survey);

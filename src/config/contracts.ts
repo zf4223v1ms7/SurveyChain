@@ -74,7 +74,7 @@ export const SURVEYCHAIN_ABI = [
   {
     "inputs": [
       { "internalType": "uint256", "name": "optionId", "type": "uint256" },
-      { "internalType": "bytes", "name": "encryptedOne", "type": "bytes" },
+      { "internalType": "bytes32", "name": "encryptedOne", "type": "bytes32" },
       { "internalType": "bytes", "name": "proof", "type": "bytes" }
     ],
     "name": "vote",

@@ -153,9 +153,18 @@ export const encryptVote = async (
   const { handles, inputProof } = await input.encrypt();
 
   console.log('[FHE] ✅ Encryption complete');
+  console.log('[FHE] Handle type:', typeof handles[0]);
+  console.log('[FHE] Handle value:', handles[0]);
+
+  // handles[0] is already a bytes32 Uint8Array, convert to hex string
+  const handleHex = '0x' + Array.from(handles[0])
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  console.log('[FHE] Handle hex:', handleHex);
 
   return {
-    encryptedOne: hexlify(handles[0]) as `0x${string}`,
+    encryptedOne: handleHex as `0x${string}`,
     proof: hexlify(inputProof) as `0x${string}`,
   };
 };

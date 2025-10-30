@@ -1,0 +1,53 @@
+[
+  {
+    "id": "1",
+    "title": "Community Sentiment Survey",
+    "description": "Share your feedback about our community",
+    "address": "0xFd56773E34D5C267B3974eb9abC76D54114E21BA",
+    "options": [
+      "Very Satisfied",
+      "Satisfied",
+      "Neutral",
+      "Dissatisfied",
+      "Very Dissatisfied"
+    ],
+    "startTime": 1761816528,
+    "endTime": 1762421328,
+    "finalized": false,
+    "optionsCount": 5
+  },
+  {
+    "id": "2",
+    "title": "Product Feature Priority Poll",
+    "description": "Help us prioritize our development roadmap",
+    "address": "0x7e2d51CE5B7aF6918854151fb8e63bd46c087Eca",
+    "options": [
+      "Privacy Features",
+      "Performance Improvements",
+      "User Interface",
+      "Documentation",
+      "Mobile Support"
+    ],
+    "startTime": 1761816540,
+    "endTime": 1763026140,
+    "finalized": false,
+    "optionsCount": 5
+  },
+  {
+    "id": "3",
+    "title": "Developer Experience Survey",
+    "description": "Rate your experience building with our platform",
+    "address": "0x1c7cF82923C93e27d47f873a9B841d0975026168",
+    "options": [
+      "Excellent",
+      "Good",
+      "Average",
+      "Needs Improvement",
+      "Poor"
+    ],
+    "startTime": 1761816552,
+    "endTime": 1762680552,
+    "finalized": false,
+    "optionsCount": 5
+  }
+]

@@ -68,8 +68,32 @@ const AnswerSurveyDialog = ({ survey, open, onClose, onVoted }: AnswerSurveyDial
       const signer = await provider.getSigner();
       const contract = new Contract(survey.address, SURVEYCHAIN_ABI, signer);
 
-      const tx = await contract.vote(optionIndex, encryptedOne, proof);
-      await tx.wait();
+      console.log('[Vote] Contract address:', survey.address);
+      console.log('[Vote] Option index:', optionIndex);
+      console.log('[Vote] Encrypted data length:', encryptedOne.length);
+      console.log('[Vote] Proof length:', proof.length);
+      console.log('[Vote] Signer address:', await signer.getAddress());
+
+      // Estimate gas first
+      try {
+        console.log('[Vote] Estimating gas...');
+        const gasEstimate = await contract.vote.estimateGas(optionIndex, encryptedOne, proof);
+        console.log('[Vote] Gas estimate:', gasEstimate.toString());
+      } catch (gasError: any) {
+        console.error('[Vote] Gas estimation failed:', gasError);
+        console.error('[Vote] Gas error code:', gasError.code);
+        console.error('[Vote] Gas error data:', gasError.data);
+        throw new Error(`Gas estimation failed: ${gasError.message}`);
+      }
+
+      console.log('[Vote] Sending transaction with 5M gas limit...');
+      const tx = await contract.vote(optionIndex, encryptedOne, proof, {
+        gasLimit: 5000000
+      });
+      console.log('[Vote] Transaction sent:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('[Vote] Transaction confirmed in block:', receipt.blockNumber);
 
       toast.success("Vote submitted successfully!", {
         description: "Your vote is encrypted and secure"
