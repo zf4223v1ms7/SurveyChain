@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 215 25% 27%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    --primary: 195 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    --primary-glow: 195 100% 65%;
+    --primary-dark: 195 100% 35%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 27%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 188 95% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 30% 88%;
+    --input: 210 30% 88%;
+    --ring: 195 100% 50%;
+
+    --radius: 0.75rem;
+    
+    /* Blockchain design tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(195 100% 50%), hsl(188 95% 55%));
+    --gradient-secondary: linear-gradient(180deg, hsl(210 40% 98%), hsl(195 80% 95%));
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(195 100% 50% / 0.15), transparent 70%);
+    
+    --shadow-glow: 0 0 40px hsl(195 100% 50% / 0.3);
+    --shadow-card: 0 4px 20px hsl(195 50% 50% / 0.08);
+    --shadow-elevated: 0 10px 40px hsl(195 50% 50% / 0.12);
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(to bottom, hsl(var(--background)), hsl(210 60% 96%));
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-glow {
+    background: var(--gradient-glow);
+  }
+  
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .glass-card {
+    background: hsl(0 0% 100% / 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(210 30% 88%);
+  }
+  
+  .glow-border {
+    box-shadow: 0 0 20px hsl(195 100% 50% / 0.2);
+  }
+  
+  .grid-pattern {
+    background-image: 
+      linear-gradient(hsl(195 100% 50% / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(195 100% 50% / 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+}
