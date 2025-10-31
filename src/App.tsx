@@ -7,6 +7,7 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { sepolia } from "wagmi/chains";
 import Index from "./pages/Index";
+import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -29,6 +30,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

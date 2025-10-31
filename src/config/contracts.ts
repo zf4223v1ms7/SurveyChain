@@ -51,7 +51,7 @@ export const SURVEYCHAIN_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      { "indexed": false, "internalType": "address", "indexed": true, "name": "viewer", "type": "address" }
+      { "indexed": true, "internalType": "address", "name": "viewer", "type": "address" }
     ],
     "name": "ViewerGranted",
     "type": "event"

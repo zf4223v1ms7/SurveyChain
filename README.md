@@ -1,126 +1,334 @@
 # SurveyChain
 
-SurveyChain is a privacy-preserving survey and voting dApp built on Zama's fhEVM.
-All cast ballots remain encrypted on-chain while still allowing real-time tally
-updates and fine-grained access control over the final results.
+**Privacy-Preserving Survey Platform with Fully Homomorphic Encryption**
 
-The project is composed of:
-- A Solidity smart contract (`contracts/SurveyChain.sol`) that enforces survey
-  rules, manages viewer permissions, and aggregates encrypted votes.
-- A React/Vite front-end (`src/`) for creating surveys and interacting with the
-  fhEVM browser wallet.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Solidity](https://img.shields.io/badge/Solidity-^0.8.24-blue)](https://soliditylang.org/)
+[![Zama fhEVM](https://img.shields.io/badge/Zama-fhEVM-purple)](https://www.zama.ai/)
 
-## Smart Contract Overview
+[Live Demo](https://surveychain.vercel.app) | [About Page](https://surveychain.vercel.app/about)
 
-### Key storage
-- `euint64` tallies stored per option: `_votes[optionId]`.
-- Per-address voting flag: `_hasVoted`.
-- Dynamic survey metadata: `title`, `_options`, `votingStart`, `votingEnd`.
-- Permission state split into:
-  - `canViewResults`: finalized viewers allowed to request decryption.
-  - `_queuedViewers` + `_queuedViewerList`: addresses to auto-authorize once finalized.
+---
 
-### Voting flow
-1. The constructor initializes encrypted zero tallies and grants the admin
-   temporary visibility.
-2. `vote(uint256 optionId, externalEuint64 encryptedOne, bytes proof)`
-   - Accepts an encrypted ballot with a zk-proof of well-formedness.
-   - Uses `FHE.fromExternal` and `FHE.req(FHE.eq(...))` to guarantee that each
-     vote contributes exactly one unit (prevents weight inflation).
-   - Accumulates the ciphertext into the option tally and refreshes
-     `FHE.allowThis` so the contract can keep mutating it.
-3. Votes are locked once `votingEnd` passes; the admin calls `finalize()` which:
-   - Marks the survey finalized and grants `FHE.allow` permissions to the admin.
-   - Auto-authorizes any queued viewers by propagating permissions across
-     every encrypted tally.
+## 📋 Table of Contents
 
-### Permission management
-- `queueViewer` / `queueViewers` allow the admin to stage viewers before the
-  survey ends. The shared `_queueViewer` helper deduplicates logic so a batch
-  operation simply skips viewers already authorized, while the single-viewer
-  variant surfaces mistakes early.
-- `removeQueuedViewer` lets the admin clean up staged viewers prior to
-  finalization. A `ViewerRemoved` event is emitted for monitoring.
-- `grantView` / `grantViewMany` provide post-finalization access, emitting
-  `ViewerGranted`.
-- `getQueuedViewers()` enumerates pending viewers, while `isQueued(address)`
-  offers a constant-time check.
+- [Overview](#overview)
+- [Demo Video](#demo-video)
+- [Why Fully Homomorphic Encryption](#why-fully-homomorphic-encryption)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Smart Contract Architecture](#smart-contract-architecture)
+- [Getting Started](#getting-started)
+- [Deployment Guide](#deployment-guide)
+- [Links](#links)
 
-### Time controls
-- `extendVoting(uint256 newEndTime)` increases the deadline (capped at
-  `MAX_DURATION` from the survey start) while preventing shrinkage or
-  indefinite extension.
-- `votingStart`, `votingEnd`, and `finalized` are exposed via
-  `getSurveyInfo()`.
+---
 
-### Error & Event surface
-- Revert reasons capture misuse (`AlreadyVoted`, `VotingClosed`, `InvalidOption`,
-  `NotQueued`, etc.) to help the front-end present accurate UX.
-- Events (`VoteCast`, `ViewerQueued`, `ViewerRemoved`, `Finalized`, ...) enable
-  indexers to build reactive dashboards without leaking encrypted tallies.
+## 🎯 Overview
 
-## FHE Integration Notes
+SurveyChain is a decentralized survey and voting platform built on Ethereum's Sepolia testnet using **Zama's fhEVM**. It enables organizations to conduct **completely private surveys** where individual votes remain encrypted on-chain, yet results can be computed without revealing voter choices.
 
-- All tallies are stored as `euint64`, matching fhEVM's recommended 64-bit
-  unsigned container for counting.
-- `FHE.fromExternal(..., proof)` must be called with the proof produced by the
-  zkVM. The new `FHE.req(FHE.eq(one, FHE.asEuint64(1)))` gate enforces that a
-  ballot represents exactly one vote, closing a common vulnerability where
-  voters inject larger ciphertexts.
-- `FHE.allowThis(ciphertext)` is refreshed after every mutation to keep the
-  contract authorized to update the stored ciphertext.
-- `FHE.allow(ciphertext, viewer)` is only emitted once the survey is finalized,
-  preserving ballot secrecy during the voting window.
+### The Problem
 
-## Front-end Integration Tips
+Traditional online surveys face critical privacy challenges:
+- Centralized databases allow administrators to access individual responses
+- Third-party risk from database operators
+- Results cannot be independently audited
+- Vulnerable to vote manipulation
 
-- Use `getSurveyInfo()` to drive countdown timers and disable the voting form
-  before/after the active window.
-- Consume `hasVoted(address)` to prevent duplicate submissions client-side
-  (the contract also enforces this).
-- When displaying queue state in the admin UI, pair `getQueuedViewers()` with
-  `isQueued(viewer)` to keep the list in sync after removals.
-- Tally decryption requires access to the fhEVM gateway; front-end callers with
-  `canViewResults[viewer] == true` can request plaintext values off-chain
-  through the standard fhEVM RPC flow.
+### The Solution
 
-## Development & Testing
+SurveyChain leverages FHE to:
+- Encrypt votes client-side before blockchain submission
+- Compute tallies on encrypted data without decryption
+- Store all data on-chain for transparency
+- Enable selective result disclosure through cryptographic permissions
 
-```sh
-# install dependencies
-npm install
+---
 
-# start the Vite dev server (frontend)
-npm run dev
+## 🎬 Demo Video
 
-# run linting
-npm run lint
+![Demo Video](public/demo.mp4)
+
+Watch how SurveyChain enables fully encrypted voting with complete privacy protection.
+
+---
+
+## 🔐 Why Fully Homomorphic Encryption?
+
+### What is FHE?
+
+**Fully Homomorphic Encryption (FHE)** allows computations on encrypted data without decryption:
+
+```
+Encrypted Vote A + Encrypted Vote B = Encrypted(A + B)
 ```
 
-Smart-contract tests are not yet included. For new work, consider:
-- Using `forge` or `hardhat` to add integration tests that mock encrypted votes.
-- Adding property tests ensuring `queueViewers` and `removeQueuedViewer` keep
-  the permission state consistent.
-- Simulating multi-viewer finalization to validate permission propagation.
+### How Survey Chain Uses FHE
 
-## Deployment Checklist
+1. **Client-Side Encryption**: Voters encrypt choices using Zama's FHE SDK
+2. **On-Chain Aggregation**: Smart contract adds encrypted votes
+3. **Permission-Based Decryption**: Only authorized viewers can decrypt results
 
-1. Deploy `SurveyChain` with:
-   - A descriptive `title`.
-   - Between 2 and 32 options.
-   - A voting duration within `[1 hour, 30 days]`.
-2. Immediately queue authorized auditors before launch (optional) through
-   `queueViewer(s)`.
-3. Share the survey address with voters; each voter encrypts the value `1`
-   using the fhEVM tooling and submits it alongside the generated proof.
-4. After `votingEnd`, call `finalize()` to unlock tallies, grant admin access,
-   and promote staged viewers.
-5. Use `grantViewMany` for any last-minute observers that should decrypt results.
+### FHE Benefits
 
-## Changelog
+| Feature | Traditional | SurveyChain (FHE) |
+|---------|------------|-------------------|
+| Vote Privacy | ❌ Admin sees all | ✅ Encrypted |
+| Computation | ❌ Needs decryption | ✅ On encrypted data |
+| Transparency | ❌ Centralized | ✅ On-chain |
+| Tamper Resistance | ❌ Modifiable | ✅ Immutable |
 
-- Enforced single-unit ballots through `FHE.req`.
-- Extracted queue management into `_queueViewer` for cleaner reuse.
-- Added `removeQueuedViewer`, `isQueued`, and `ViewerRemoved` to manage staged
-  viewers safely.
-- Replaced the placeholder README with domain-specific documentation.
+---
+
+## ✨ Key Features
+
+- ✅ **Fully Encrypted Voting** using Zama's TFHE
+- ✅ **Multi-Option Surveys** (2-32 options)
+- ✅ **Time-Bound Voting** (1 hour - 30 days)
+- ✅ **One Vote Per Address**
+- 👥 **Permission Management** (queue/grant/revoke viewers)
+- ⏰ **Voting Extension** capability
+- 🔒 **Finalization** locks voting permanently
+
+---
+
+## 🛠 Technology Stack
+
+### Frontend
+- React 18 + TypeScript
+- Vite build tool
+- Tailwind CSS + shadcn/ui
+
+### Web3
+- Wagmi v2 + Viem
+- RainbowKit wallet connection
+- Zama Relayer SDK
+
+### Smart Contract
+- Solidity ^0.8.24
+- Zama fhEVM
+- Hardhat development environment
+- Sepolia Testnet deployment
+
+---
+
+## 🏗 System Architecture
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────────┐
+│   Browser   │────────>│  Zama FHE    │────────>│  Smart Contract │
+│   (Voter)   │         │    SDK       │         │   (Sepolia)     │
+└─────────────┘         └──────────────┘         └─────────────────┘
+      │                        │                          │
+      │ 1. Select Option       │                          │
+      │ 2. Encrypt Vote        │                          │
+      │ 3. Generate Proof      │                          │
+      │                        │ 4. Submit Tx             │
+      │<─────────────────────────────────────────────────>│
+      │                        │                          │
+      │                        │                  ┌───────────────┐
+      │                        │                  │  FHE.add()    │
+      │                        │                  │  accumulate   │
+      │                        │                  └───────────────┘
+      │                        │                          │
+      │                        │ 5. Request Decryption    │
+      │<────────────────────────────────────────────────>│
+      │                        │                          │
+      ▼                        ▼                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│            Zama Decryption Gateway                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📐 Smart Contract Architecture
+
+### Contract: `SurveyChain.sol`
+
+**Network**: Sepolia Testnet  
+**Address**: `0xD606501F2E98e345Ab32A627E861dF7DF2FD2135`
+
+### State Variables
+
+```solidity
+address public admin;                           // Survey creator
+string public title;                            // Survey question
+uint256 public votingStart;                     // Start timestamp
+uint256 public votingEnd;                       // End timestamp
+bool public finalized;                          // Lock status
+
+mapping(uint256 => euint64) private _votes;     // optionId => encrypted tally
+mapping(address => bool) private _hasVoted;     // voter => voted flag
+string[] private _options;                      // Answer options
+mapping(address => bool) public canViewResults; // Authorized viewers
+```
+
+### Key Functions
+
+#### Constructor
+```solidity
+constructor(
+    string memory _title,
+    string[] memory optionList,
+    uint256 durationSeconds
+)
+```
+- Validates 2-32 options and 1 hour - 30 day duration
+- Initializes encrypted zero tallies
+- Sets voting window
+
+#### vote()
+```solidity
+function vote(
+    uint256 optionId,
+    externalEuint64 encryptedOne,
+    bytes calldata proof
+) external
+```
+- Verifies zero-knowledge proof
+- Adds encrypted vote to tally: `FHE.add(_votes[optionId], one)`
+- Marks voter as participated
+
+#### finalize()
+```solidity
+function finalize() external
+```
+- Admin-only function
+- Locks voting permanently
+- Grants decryption permissions to authorized viewers
+
+#### getTally()
+```solidity
+function getTally(uint256 optionId) external view returns (euint64)
+```
+- Returns encrypted tally (authorized viewers only)
+- Requires survey finalization
+
+### FHE Type System
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `euint64` | Encrypted 64-bit unsigned int | Vote tallies |
+| `externalEuint64` | External encrypted input | User votes |
+
+### Security Features
+
+1. **Proof Verification**: `FHE.fromExternal()` validates ZK proofs
+2. **Permission Isolation**: Tallies locked until finalization
+3. **Single Vote Enforcement**: `_hasVoted` mapping
+4. **Time Lock**: Strict voting window enforcement
+5. **Permission Refresh**: `FHE.allowThis()` after mutations
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+```bash
+Node.js >= 18.0.0
+npm >= 9.0.0
+MetaMask or Web3 wallet
+Sepolia testnet ETH
+```
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/SurveyChain.git
+cd SurveyChain
+
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+```
+
+### Environment Variables
+
+Create `.env`:
+
+```env
+SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+PRIVATE_KEY=your_private_key_here
+```
+
+---
+
+## 📦 Deployment Guide
+
+### Smart Contract Deployment
+
+```bash
+# Compile contracts
+npx hardhat compile
+
+# Deploy to Sepolia
+export SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+export PRIVATE_KEY="your_private_key"
+npx hardhat run scripts/deploy.js --network sepolia
+
+# Verify on Etherscan
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> \
+  "Survey Title" \
+  '["Option 1","Option 2","Option 3"]' \
+  604800
+```
+
+### Frontend Deployment
+
+```bash
+# Deploy to Vercel
+vercel --prod
+
+# Set custom domain
+vercel alias set <deployment-url> surveychain.vercel.app
+```
+
+#### vercel.json Configuration
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+---
+
+## 🔗 Links
+
+- **Live Demo**: https://surveychain.vercel.app
+- **About Page**: https://surveychain.vercel.app/about
+- **Contract**: `0xD606501F2E98e345Ab32A627E861dF7DF2FD2135`
+- **Etherscan**: https://sepolia.etherscan.io/address/0xD606501F2E98e345Ab32A627E861dF7DF2FD2135
+- **Zama Docs**: https://docs.zama.ai/fhevm
+- **fhEVM GitHub**: https://github.com/zama-ai/fhevm
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Acknowledgments
+
+- **Zama** - fhEVM and TFHE technology
+- **Ethereum Foundation** - Sepolia testnet
+- **shadcn/ui** - React components
+- **RainbowKit** - Wallet integration
+
+---
+
+**Built with ❤️ using Fully Homomorphic Encryption**

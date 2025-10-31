@@ -133,6 +133,13 @@ export async function initializeFHE(provider?: any): Promise<any> {
 /**
  * Encrypt a uint64 value (for voting: always encrypt 1)
  */
+const toBytes32 = (bytes: Uint8Array): `0x${string}` => {
+  if (bytes.length !== 32) {
+    throw new Error(`FHE handle must be 32 bytes; received ${bytes.length}`);
+  }
+  return hexlify(bytes) as `0x${string}`;
+};
+
 export const encryptVote = async (
   contractAddress: string,
   userAddress: string
@@ -152,19 +159,16 @@ export const encryptVote = async (
   console.log('[FHE] Encrypting...');
   const { handles, inputProof } = await input.encrypt();
 
+  if (!handles?.length) {
+    throw new Error('No handles returned from FHE encryption');
+  }
+
   console.log('[FHE] ✅ Encryption complete');
   console.log('[FHE] Handle type:', typeof handles[0]);
   console.log('[FHE] Handle value:', handles[0]);
 
-  // handles[0] is already a bytes32 Uint8Array, convert to hex string
-  const handleHex = '0x' + Array.from(handles[0])
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  console.log('[FHE] Handle hex:', handleHex);
-
   return {
-    encryptedOne: handleHex as `0x${string}`,
+    encryptedOne: toBytes32(handles[0]),
     proof: hexlify(inputProof) as `0x${string}`,
   };
 };
@@ -187,4 +191,9 @@ export const decryptTally = async (
 
   console.log('[FHE] ✅ Decryption complete');
   return BigInt(decrypted);
+};
+
+export const __resetFHECacheForTests = () => {
+  fheInstance = null;
+  sdkPromise = null;
 };
